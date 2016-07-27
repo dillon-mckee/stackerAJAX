@@ -1,32 +1,26 @@
-// this function takes the question object returned by the StackOverflow request
+// this function takes the user object returned by the StackOverflow request
 // and returns new result to be appended to DOM
-var showQuestion = function(question) {
+var showUser = function(userData) {
 
 	// clone our result template code
-	var result = $('.templates .question').clone();
+	var result = $('.templates .user').clone();
 
-	// Set the question properties in result
-	var questionElem = result.find('.question-text a');
-	questionElem.attr('href', question.link);
-	questionElem.text(question.title);
+	// Set the user image
+	var userImg = result.find('.user-image img');
+	userImg.attr('src', userData.user.profile_image);
 
-	// set the date asked property in result
-	var asked = result.find('.asked-date');
-	var date = new Date(1000*question.creation_date);
-	asked.text(date.toString());
+	// set the user name (with link to profile)
+	var userName = result.find('.user-name a');
+	userName.attr('href', userData.user.link);
+	userName.text(userData.user.display_name);
 
-	// set the .viewed for question property in result
-	var viewed = result.find('.viewed');
-	viewed.text(question.view_count);
+	// set the .reputation for user property in result
+	var reputation = result.find('.user-reputation');
+	reputation.text(userData.user.reputation);
 
-	// set some properties related to asker
-	var asker = result.find('.asker');
-	asker.html('<p>Name: <a target="_blank" '+
-		'href=http://stackoverflow.com/users/' + question.owner.user_id + ' >' +
-		question.owner.display_name +
-		'</a></p>' +
-		'<p>Reputation: ' + question.owner.reputation + '</p>'
-	);
+	// set the .reputation for user property in result
+	var postcount = result.find('.user-postcount');
+	postcount.text(userData.post_count);
 
 	return result;
 };
@@ -48,18 +42,21 @@ var showError = function(error){
 
 // takes a string of semi-colon separated tags to be searched
 // for on StackOverflow
-var getUnanswered = function(tags) {
+var getInspiration = function(answerers) {
 
 	// the parameters we need to pass in our request to StackOverflow's API
 	var request = {
-		tagged: tags,
+		tagged: answerers,
 		site: 'stackoverflow',
 		order: 'desc',
-		sort: 'creation'
+		sort: 'score'
 	};
+ 	
+ 	var answerersURL = "http://api.stackexchange.com/2.2/tags/" + answerers + "/top-answerers/all_time";
+ 	console.log(answerersURL);
 
 	$.ajax({
-		url: "http://api.stackexchange.com/2.2/questions/unanswered",
+		url: answerersURL,
 		data: request,
 		dataType: "jsonp",//use jsonp to avoid cross origin issues
 		type: "GET",
@@ -71,8 +68,8 @@ var getUnanswered = function(tags) {
 		//$.each is a higher order function. It takes an array and a function as an argument.
 		//The function is executed once for each item in the array.
 		$.each(result.items, function(i, item) {
-			var question = showQuestion(item);
-			$('.results').append(question);
+			var user = showUser(item);
+			$('.results').append(user);
 		});
 	})
 	.fail(function(jqXHR, error){ //this waits for the ajax to return with an error promise object
@@ -82,13 +79,15 @@ var getUnanswered = function(tags) {
 };
 
 
+
 $(document).ready( function() {
-	$('.unanswered-getter').submit( function(e){
+
+	$('.inspiration-getter').submit( function(e){
 		e.preventDefault();
 		// zero out results if previous search has run
 		$('.results').html('');
 		// get the value of the tags the user submitted
-		var tags = $(this).find("input[name='tags']").val();
-		getUnanswered(tags);
+		var answerers = $(this).find("input[name='answerers']").val();
+		getInspiration(answerers);
 	});
 });
